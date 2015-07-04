@@ -68,6 +68,13 @@ class Gibbs_sampler(object):
         self.test_doc = np.load(self.data_dir + test_doc + '.npy').tolist()
 
         # ******************************* init counts&mask *********************************************
+        self.train_cts_set = []
+        cnt = 0
+        for file_name in listdir(self.data_dir):
+            if self.set_name in file_name:
+                self.train_cts_set[cnt] = (file_name, np.load(self.data_dir + file_name).tolist())
+                cnt += 1
+
         if single:
             ndk = np.zeros((self.doc_per_set, self.K), dtype=np.int32)
             nd = np.zeros(self.doc_per_set, dtype=np.int32)
@@ -87,17 +94,18 @@ class Gibbs_sampler(object):
     def init_cnts(self, nkw_part, ndk, nd, z, start, end, silent):
         """ used for init_cnts, the load and write should be handled outside
             the init of ndk, nk, z should also be handled outside"""
-        for file_name in listdir(self.data_dir):
-            if self.set_name in file_name:
-                if not silent: print '(%i)%i: %i init set: ' % (self.rank, start, end), file_name
-                train_cts = np.load(self.data_dir + file_name).tolist()
-                if start != 0: (ndk, nd, z) = self.load_d(re.search(r'\d+', file_name).group())
-                util_funcs.init_light(train_cts, ndk, nkw_part, nd, self.nk, self.doc_per_set, z,
-                                      self.K, start, end, start == 0)
-                self.save_and_init(re.search(r'\d+', file_name).group(), ndk, nd, z)
-                ndk.fill(0)
-                nd.fill(0)
-                z = np.array([None for _ in xrange(self.doc_per_set)], dtype=object)
+        for file_name, train_cts in self.train_cts_set:
+            if not silent: print '(%i)%i: %i init set: ' % (self.rank, start, end), file_name
+
+            if start != 0: (ndk, nd, z) = self.load_d(re.search(r'\d+', file_name).group())
+
+            util_funcs.init_light(train_cts, ndk, nkw_part, nd, self.nk, self.doc_per_set, z,
+                                  self.K, start, end, start == 0)
+
+            self.save_and_init(re.search(r'\d+', file_name).group(), ndk, nd, z)
+            ndk.fill(0); nd.fill(0)
+            z = np.array([None for _ in xrange(self.doc_per_set)], dtype=object)
+
         self.mask[start:end] = ~(nkw_part == 0).all(0)
 
     def load_d(self, set_name):
@@ -170,20 +178,18 @@ class Gibbs_sampler(object):
 
         (table_h, table_l, table_p) = self.gen_table(part, nkw_part)
 
-        for file_name in listdir(self.data_dir):
-            if self.set_name in file_name:
-                if not silent: print '(%i)%i: %i set: ' % (self.rank, part[0], part[1]), file_name
+        for file_name, train_cts in self.train_cts_set:
+            if not silent: print '(%i)%i: %i set: ' % (self.rank, part[0], part[1]), file_name
 
-                nkw_stale = nkw_part.copy()
-                nk_stale = np.copy(self.nk)
-                train_cts = np.load(self.data_dir + file_name).tolist()
-                (ndk, nd, z) = self.load_d(re.search(r'\d+', file_name).group())
+            nkw_stale = nkw_part.copy()
+            nk_stale = np.copy(self.nk)
+            (ndk, nd, z) = self.load_d(re.search(r'\d+', file_name).group())
 
-                util_funcs.sample_light(self.K, self.alpha, self.alpha_bar, self.beta, self.beta_bar, table_h, table_l,
-                                        table_p, nkw_part, self.nk, ndk, nd, nkw_stale, nk_stale, z,
-                                        train_cts, MH_max, part[0], part[1], self.doc_per_set, file_name)
+            util_funcs.sample_light(self.K, self.alpha, self.alpha_bar, self.beta, self.beta_bar, table_h, table_l,
+                                    table_p, nkw_part, self.nk, ndk, nd, nkw_stale, nk_stale, z,
+                                    train_cts, MH_max, part[0], part[1], self.doc_per_set, file_name)
 
-                self.save_and_init(re.search(r'\d+', file_name).group(), ndk, nd, z)
+            self.save_and_init(re.search(r'\d+', file_name).group(), ndk, nd, z)
 
         if nkw_part is None:
             cul_time = time.time()

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1363bd70-00bb-453e-8201-fd1f81341c5e" name="Default" comment="" />
+    <list default="true" id="1363bd70-00bb-453e-8201-fd1f81341c5e" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/sampler_g.py" afterPath="$PROJECT_DIR$/sampler_g.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+    </list>
     <ignored path="very_large.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -50,13 +53,13 @@
       <file leaf-file-name="sampler_g.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/sampler_g.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.6218679" vertical-offset="443" max-vertical-offset="6095">
-              <caret line="43" column="18" selection-start-line="43" selection-start-column="18" selection-end-line="43" selection-end-column="18" />
+            <state vertical-scroll-proportion="2.0205011" vertical-offset="664" max-vertical-offset="6233">
+              <caret line="106" column="41" selection-start-line="106" selection-start-column="41" selection-end-line="106" selection-end-column="41" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
-                <element signature="e#4145#4998#0" expanded="false" />
-                <element signature="e#8299#10595#0" expanded="false" />
-                <element signature="e#10631#11009#0" expanded="false" />
+                <element signature="e#4263#5116#0" expanded="false" />
+                <element signature="e#8277#10573#0" expanded="false" />
+                <element signature="e#10609#10987#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -80,6 +83,9 @@
     <FindUsagesManager>
       <setting name="OPEN_NEW_TAB" value="true" />
     </FindUsagesManager>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
@@ -105,8 +111,8 @@
         <option value="$PROJECT_DIR$/LWsampler.py" />
         <option value="$PROJECT_DIR$/DSGLD.py" />
         <option value="$PROJECT_DIR$/sgd4lda.py" />
-        <option value="$PROJECT_DIR$/sampler_g.py" />
         <option value="$PROJECT_DIR$/MPI_test.py" />
+        <option value="$PROJECT_DIR$/sampler_g.py" />
       </list>
     </option>
   </component>
@@ -921,13 +927,13 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/sampler_g.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.6218679" vertical-offset="443" max-vertical-offset="6095">
-          <caret line="43" column="18" selection-start-line="43" selection-start-column="18" selection-end-line="43" selection-end-column="18" />
+        <state vertical-scroll-proportion="2.0205011" vertical-offset="664" max-vertical-offset="6233">
+          <caret line="106" column="41" selection-start-line="106" selection-start-column="41" selection-end-line="106" selection-end-column="41" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
-            <element signature="e#4145#4998#0" expanded="false" />
-            <element signature="e#8299#10595#0" expanded="false" />
-            <element signature="e#10631#11009#0" expanded="false" />
+            <element signature="e#4263#5116#0" expanded="false" />
+            <element signature="e#8277#10573#0" expanded="false" />
+            <element signature="e#10609#10987#0" expanded="false" />
           </folding>
         </state>
       </provider>
