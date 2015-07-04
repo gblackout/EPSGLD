@@ -72,11 +72,9 @@ class Gibbs_sampler(object):
 
         # ******************************* init counts&mask *********************************************
         self.train_cts_set = []
-        cnt = 0
         for file_name in listdir(self.data_dir):
             if self.set_name in file_name:
-                self.train_cts_set[cnt] = (file_name, np.load(self.data_dir + file_name).tolist())
-                cnt += 1
+                self.train_cts_set.append((file_name, np.load(self.data_dir + file_name).tolist()))
 
         if single:
             ndk = np.zeros((self.doc_per_set, self.K), dtype=np.int32)
