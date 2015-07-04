@@ -56,10 +56,6 @@ class Gibbs_sampler(object):
         self.set_name = set_name
         self.rank = rank
         self.bak_time = 0
-
-        #debug
-        self.con_time = 0
-
         # ******************************* init the matrices *********************************************
         self.name = self.tmp_dir + 'nkw' + self.suffix + '.h5'
         self.node_name = 'nkw'
@@ -139,14 +135,11 @@ class Gibbs_sampler(object):
 
         start = time.time()
         ndk = sparse.csr_matrix(ndk)
-        self.con_time += time.time()-start
+        self.bak_time += time.time() - start
 
-        start = time.time()
         ndk.data.dump(pn + '_ndk_data')
         ndk.indices.dump(pn + '_ndk_indices')
         ndk.indptr.dump(pn + '_ndk_indptr')
-        self.bak_time += time.time() - start
-
         nd.dump(pn + '_nd')
         np.save(pn + '_zzz', z)
 
@@ -304,29 +297,28 @@ def run_very_large_light(MH_max):
     start_time = time.time()
     sampler = Gibbs_sampler(V, K, rank, doc_per_set, dir, word_partition=word_partition)
 
-    print sampler.con_time, sampler.bak_time
-    # f = open(output_name, 'w')
-    # # start_time = get_per(f, sampler, start_time)
-    # start_time = time.time()
-    #
-    # for i in xrange(num):
-    #     print 'iter--->', i
-    #
-    #     start_w = 0
-    #     while start_w < V:
-    #         end = start_w + word_partition
-    #         end = end * (end <= V) + V * (end > V)
-    #
-    #         sampler.update([start_w, end], MH_max=MH_max)
-    #
-    #         start_w = end
-    #
-    #     # if i < jump_bias:
-    #     #     start_time = get_per(f, sampler, start_time)
-    #     # elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
-    #     #     start_time = get_per(f, sampler, start_time)
-    #
-    # f.close()
+    f = open(output_name, 'w')
+    # start_time = get_per(f, sampler, start_time)
+    start_time = time.time()
+
+    for i in xrange(num):
+        print 'iter--->', i
+
+        start_w = 0
+        while start_w < V:
+            end = start_w + word_partition
+            end = end * (end <= V) + V * (end > V)
+
+            sampler.update([start_w, end], MH_max=MH_max)
+
+            start_w = end
+
+        # if i < jump_bias:
+        #     start_time = get_per(f, sampler, start_time)
+        # elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
+        #     start_time = get_per(f, sampler, start_time)
+    print start_time - sampler.bak_time
+    f.close()
 
 
 def get_per(f, sampler, start_time):
