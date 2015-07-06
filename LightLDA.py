@@ -22,20 +22,27 @@ def lightLDA(num, V, K, max_len, out_dir, dir, doc_per_set=int(1e4), alpha=0.01,
     rank = comm.Get_rank()
     size = comm.Get_size()
     seg_list = [[i*V/(size-1), (i+1)*V/(size-1)] for i in xrange(size-1)]
+    fromto_list = []
     bak_time = 0
-    start_time = time.time()
-    sampler = Gibbs_sampler(V, K, rank, doc_per_set, dir, alpha=alpha, beta=beta, word_partition=max_len,
-                            single=False)
-    output_name = out_dir + 'LightLDA_perplexity' + sampler.suffix + '.txt'
-    if rank == 0: print 'init cnts & Bcast nkw ...'
-    ndk = np.zeros((doc_per_set, K), dtype=np.int32)
-    nd = np.zeros(doc_per_set, dtype=np.int32)
-    z = np.array([None for _ in xrange(doc_per_set)], dtype=object)
-
     start = 0
     while start < V:
         end = start + max_len
         end = end * (end <= V) + V * (end > V)
+        fromto_list.append([start, end])
+        start = end
+
+    # ************************************ init cnts *******************************************************
+    start_time = time.time()
+
+    sampler = Gibbs_sampler(V, K, rank, doc_per_set, dir, alpha=alpha, beta=beta, word_partition=max_len, single=False)
+    output_name = out_dir + 'LightLDA_perplexity' + sampler.suffix + '.txt'
+
+    if rank == 0: print 'init cnts & Bcast nkw ...'
+
+    ndk = np.zeros((doc_per_set, K), dtype=np.int32)
+    nd = np.zeros(doc_per_set, dtype=np.int32)
+    z = np.array([None for _ in xrange(doc_per_set)], dtype=object)
+    for start, end in fromto_list:
         nkw_part = np.zeros((K, end-start), dtype=np.int32)
         if rank == 0:
             comm.Reduce([nkw_part.copy(), MPI.INT], [nkw_part, MPI.INT], op=MPI.SUM, root=0)
@@ -45,14 +52,14 @@ def lightLDA(num, V, K, max_len, out_dir, dir, doc_per_set=int(1e4), alpha=0.01,
         else:
             sampler.init_cnts(nkw_part, ndk, nd, z, start, end, False)
             comm.Reduce([nkw_part, MPI.INT], [nkw_part.copy(), MPI.INT], op=MPI.SUM, root=0)
-        start = end
 
-    # get global mask & nkw
+    # get global mask
     sampler.mask = np.int32(sampler.mask)
     comm.Reduce([sampler.mask.copy(), MPI.INT], [sampler.mask, MPI.INT], op=MPI.SUM, root=0)
     comm.Bcast([sampler.mask, MPI.INT], root=0)
     sampler.mask = sampler.mask > 0
 
+    # get global nk
     comm.Reduce([sampler.nk.copy(), MPI.INT], [sampler.nk, MPI.INT], op=MPI.SUM, root=0)
     comm.Bcast([sampler.nk, MPI.INT], root=0)
     # ************************************ sampling *******************************************************
@@ -148,12 +155,12 @@ def lightLDA(num, V, K, max_len, out_dir, dir, doc_per_set=int(1e4), alpha=0.01,
 
 
 def get_per_light(output_name, sampler, start_time, bak_time):
-    f = open(output_name, 'a')
     start_time += bak_time
     per_s = time.time()
     print '---------------------------> computing perplexity: '
     prplx = sampler.get_perp_just_in_time(50, 10)
     print '---------------------------> perplexity: %.2f' % prplx
+    f = open(output_name, 'a')
     f.write('%.2f\t%.2f\n' % (prplx, per_s - start_time))
     f.close()
     return start_time + time.time() - per_s
@@ -164,5 +171,5 @@ if __name__ == '__main__':
     # lightLDA(30, 2, V=5, K=5, dir='./small_test_light_d/', doc_per_set=15)
 
     # very large
-    lightLDA(25, int(1e5), 1000, 10000, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/t_saved/')
+    lightLDA(50, int(1e5), 10000, 10000, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/t_saved/', MH_max=2)
 

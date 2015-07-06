@@ -56,6 +56,7 @@ class Gibbs_sampler(object):
         self.set_name = set_name
         self.rank = rank
         self.bak_time = 0
+
         # ******************************* init the matrices *********************************************
         self.name = self.tmp_dir + 'nkw' + self.suffix + '.h5'
         self.node_name = 'nkw'
@@ -107,57 +108,16 @@ class Gibbs_sampler(object):
 
     def load_d(self, set_name):
         pn = self.tmp_dir + self.suffix + set_name
-
-        ndk = sparse.csr_matrix((np.load(pn + '_ndk_data'), np.load(pn + '_ndk_indices'), np.load(pn + '_ndk_indptr')),
-                                shape=(self.doc_per_set, self.K)).toarray()
+        ndk = np.load(pn + '_ndk')
         nd = np.load(pn + '_nd')
         z = np.load(pn + '_zzz' + '.npy')
-
-        # name_list = [pn + '_ndk_data', pn + '_ndk_indices', pn + '_ndk_indptr', pn + '_nd', pn + '_zzz' + '.npy']
-        # t_rec = []
-        #
-        # for name in name_list:
-        #     t = Loader(name)
-        #     t.start()
-        #     t_rec.append(t)
-        #
-        # for t in t_rec:
-        #     t.join()
-        #
-        # ndk = sparse.csr_matrix((t_rec[0].arr, t_rec[1].arr, t_rec[2].arr), shape=(self.doc_per_set, self.K)).toarray()
-        # nd = t_rec[3].arr
-        # z = t_rec[4].arr
-
         return ndk, nd, z
 
     def save_and_init(self, set_name, ndk, nd, z):
         pn = self.tmp_dir + self.suffix + set_name
-
-        start = time.time()
-        ndk = sparse.csr_matrix(ndk)
-        self.bak_time += time.time() - start
-
-        ndk.data.dump(pn + '_ndk_data')
-        ndk.indices.dump(pn + '_ndk_indices')
-        ndk.indptr.dump(pn + '_ndk_indptr')
+        ndk.dump(pn + '_ndk')
         nd.dump(pn + '_nd')
         np.save(pn + '_zzz', z)
-
-
-        # t_rec = []
-        # ndk = sparse.csr_matrix(ndk)
-        # name_list = [(ndk.data, pn + '_ndk_data'), (ndk.indices, pn + '_ndk_indices'), (ndk.indptr, pn + '_ndk_indptr'),
-        #              (nd, pn + '_nd')]
-        #
-        # for arr, name in name_list:
-        #     t = Dumper(name, arr)
-        #     t.start()
-        #     t_rec.append(t)
-        #
-        # np.save(pn + '_zzz', z)
-        #
-        # for t in t_rec:
-        #     t.join()
 
     # run: 24G; out: 0G
     def update(self, part, MH_max=None, nkw_part=None, silent=False):
@@ -267,7 +227,7 @@ def slice_list(input, size):
 
 
 def run_very_large_light(MH_max):
-    num = 1
+    num = 30
     rank = 1
     word_partition = 10000
     doc_per_set = int(1e4)
@@ -291,47 +251,52 @@ def run_very_large_light(MH_max):
     # jump_hold = 0
     # set_name = 'saved'
     # dir = './small_test_light/'
-
     output_name = out_dir+'serial_light_perplexity' + time.strftime('_%m%d_%H%M%S', time.localtime()) + '.txt'
+
+    part_list = []
+    start = 0
+    while start < V:
+        end = start + word_partition
+        end = end * (end <= V) + V * (end > V)
+        part_list.append([start, end])
+        start = end
 
     start_time = time.time()
     sampler = Gibbs_sampler(V, K, rank, doc_per_set, dir, word_partition=word_partition)
 
-    f = open(output_name, 'w')
-    # start_time = get_per(f, sampler, start_time)
-    start_time = time.time()
-
+    start_time = get_per(output_name, sampler, start_time)
     for i in xrange(num):
         print 'iter--->', i
 
-        start_w = 0
-        while start_w < V:
-            end = start_w + word_partition
-            end = end * (end <= V) + V * (end > V)
+        for start, end in part_list:
+            sampler.update([start, end], MH_max=MH_max)
 
-            sampler.update([start_w, end], MH_max=MH_max)
-
-            start_w = end
-
-        # if i < jump_bias:
-        #     start_time = get_per(f, sampler, start_time)
-        # elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
-        #     start_time = get_per(f, sampler, start_time)
-    print start_time - sampler.bak_time
-    f.close()
+        if i < jump_bias:
+            start_time = get_per(output_name, sampler, start_time)
+        elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
+            start_time = get_per(output_name, sampler, start_time)
 
 
-def get_per(f, sampler, start_time):
+def get_per(output_name, sampler, start_time):
+    print '---------------------------> computing perplexity: '
+
     start_time += sampler.bak_time; sampler.bak_time = 0
     per_s = time.time()
-    print '---------------------------> computing perplexity: '
-    f.write('%.2f\t%.2f\n' % (sampler.get_perp_just_in_time(50, 10), per_s - start_time))
+
+    prplx = sampler.get_perp_just_in_time(50, 10)
+    print 'perplexity: %.2f' % prplx
+
+    f = open(output_name, 'a')
+    f.write('%.2f\t%.2f\n' % (prplx, per_s - start_time))
+    f.close()
+
     return start_time + time.time() - per_s
 
+
 if __name__ == '__main__':
-    # run_very_large_light(2)
+    run_very_large_light(2)
 
-    cProfile.runctx("run_very_large_light(2)", globals(), locals(), '/home/lijm/WORK/yuan/'+"Profile.prof")
-
-    s = pstats.Stats('/home/lijm/WORK/yuan/'+"Profile.prof")
-    s.strip_dirs().sort_stats("time").print_stats()
+    # cProfile.runctx("run_very_large_light(2)", globals(), locals(), '/home/lijm/WORK/yuan/'+"Profile.prof")
+    #
+    # s = pstats.Stats('/home/lijm/WORK/yuan/'+"Profile.prof")
+    # s.strip_dirs().sort_stats("time").print_stats()
