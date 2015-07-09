@@ -93,7 +93,7 @@ class LDSampler(object):
 
     # space: 20G
     def update(self, MH_max, LWsampler=False, g_theta=None, rec=None):
-        train_cts, phi = self.next_batch(MH_max); collect()
+        train_cts, phi = self.next_batch(MH_max, shift_dir=~LWsampler); collect()
 
         batch_mask = self.current_set[4][self.batch_loc[1]]
         if LWsampler: rec[:] = rec + batch_mask
@@ -227,9 +227,10 @@ class LDSampler(object):
         util_funcs.kill_obj(phi.shape[1], samples)
         return np.exp(- log_avg_probs / num)
 
-    def next_batch(self, MH_max):
+    def next_batch(self, MH_max, shift_dir):
         """ note: no detection if the file exist
-            assuming format: [ [[d],[d],[d],[d]], map[], mask[], flag, [maskd[], maskd[], maskd[], maskd[]] ]"""
+            assuming format: [ [[d],[d],[d],[d]], map[], mask[], flag, [maskd[], maskd[], maskd[], maskd[]] ]
+            shift_dir: if true, we will jump to next folder if file here is exhausted"""
         if self.current_set is None:
             self.current_set = load(open(self.data_dir + 'saved_%i' % self.batch_loc[0], 'r'))
             self.samples, phi = self.gen_alias_table(MH_max)
@@ -269,22 +270,21 @@ def slice_list(input, size):
 
 
 def run_very_large(MH_max, alpha=0.01, beta=0.0001, step_size_param=(0.01, 1000, 0.55)):
-    num = 30
+    num = 12000
     train_set_size = 20726
     rank = 1
     doc_per_set = 200
     V = int(1e5)
-    K = 10000
+    K = 1000
     jump = 10
     jump_bias = 0
     jump_hold = 0
     batch_size = 50
-#    dir = '../corpus/b4_ff/'
+    # dir = '../corpus/b4_ff/'
+    # out_dir = './'
     dir = '/home/lijm/WORK/yuan/b4_ff/'
-    # TODO should be half, since gamma returns double
-    max_len = 10000
     out_dir = '/home/lijm/WORK/yuan/'
-#    out_dir = './'
+    max_len = 10000
 
     # num = 100
     # train_set_size = 5
@@ -303,31 +303,33 @@ def run_very_large(MH_max, alpha=0.01, beta=0.0001, step_size_param=(0.01, 1000,
 
     output_name = out_dir + 'serial_perplexity' + time.strftime('_%m%d_%H%M%S', time.localtime()) + '.txt'
 
-    sampler = LDSampler(0, dir, rank, train_set_size*doc_per_set, K, V, max_len, batch_size=batch_size, alpha=alpha,
+    sampler = LDSampler(0, dir, rank, train_set_size*doc_per_set, K, V, max_len, 1, batch_size=batch_size, alpha=alpha,
                         beta=beta, epsilon=step_size_param[0], tau0=step_size_param[1], kappa=step_size_param[2])
-    f = open(output_name, 'w')
 
-    start_time = time.time()
-    start_time = get_per(f, sampler, start_time)
+    start_time = get_per(output_name, sampler, time.time())
     for i in xrange(num):
         print 'iter--->', i
         sampler.update(MH_max)
 
         if i < jump_bias and i != 0:
-            start_time = get_per(f, sampler, start_time)
+            start_time = get_per(output_name, sampler, start_time)
         elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
-            start_time = get_per(f, sampler, start_time)
-
-    f.close()
+            start_time = get_per(output_name, sampler, start_time)
 
 
-def get_per(f, sampler, start_time):
+def get_per(output_name, sampler, start_time):
     start_time += sampler.time_bak; sampler.time_bak = 0
     per_s = time.time()
+
     print 'computing perplexity: '
-    f.write('%.2f\t%.2f\n' % (sampler.get_perp_just_in_time(10), per_s - start_time))
-    tmp = start_time + time.time() - per_s
-    return tmp
+    prplx = sampler.get_perp_just_in_time(10)
+
+    print 'perplexity: %.2f' % prplx
+    f = open(output_name, 'a')
+    f.write('%.2f\t%.2f\n' % (prplx, per_s - start_time))
+    f.close()
+
+    return start_time + time.time() - per_s
 
 from sys import argv
 if __name__ == '__main__':
@@ -336,7 +338,7 @@ if __name__ == '__main__':
     if len(argv) != 2:
         print 'try again'
     else:
-        run_very_large(MH_max=int(argv[1]))
+        run_very_large(MH_max=10)
 
         # cProfile.runctx("run_very_large(10)", globals(), locals(), '/home/lijm/WORK/yuan/'+"Profile.prof")
         #
