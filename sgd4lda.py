@@ -46,6 +46,7 @@ class LDSampler(object):
         self.update_ct = 0
         self.rank = rank
         if suffix is None: suffix = time.strftime('_%m%d_%H%M%S', time.localtime()) + '_' + str(rank)
+        self.dir = dir
         self.data_dir = dir + str(rank) + '/'
         self.tmp_dir = dir + 'tmp' + suffix + '/'
         makedirs(self.tmp_dir)
@@ -246,6 +247,14 @@ class LDSampler(object):
                 self.batch_loc[0] += 1
             else:
                 print '************ worker %i fails to load set %i *************' % (self.rank, self.batch_loc[0])
+                if shift_dir and path.isdir(self.dir + str(self.rank+1) + '/'):
+                    self.rank += 1
+                    self.data_dir = self.dir + str(self.rank) + '/'
+                    print '************ shift to folder %s *************' % self.data_dir
+                elif shift_dir:
+                    self.rank = 1
+                    self.data_dir = self.dir + str(self.rank) + '/'
+                    print '************ shift to folder %s *************' % self.data_dir
                 self.batch_loc[0] = 0
             self.batch_loc[1] = 0
             self.current_set = load(open(self.data_dir + 'saved_%i' % self.batch_loc[0], 'r'))
@@ -335,14 +344,12 @@ from sys import argv
 if __name__ == '__main__':
     # run_single()
     # test_on_alias()
-    if len(argv) != 2:
-        print 'try again'
-    else:
-        run_very_large(MH_max=10)
 
-        # cProfile.runctx("run_very_large(10)", globals(), locals(), '/home/lijm/WORK/yuan/'+"Profile.prof")
-        #
-        # s = pstats.Stats('/home/lijm/WORK/yuan/'+"Profile.prof")
-        # s.strip_dirs().sort_stats("time").print_stats()
+    run_very_large(MH_max=10)
+
+    # cProfile.runctx("run_very_large(10)", globals(), locals(), '/home/lijm/WORK/yuan/'+"Profile.prof")
+    #
+    # s = pstats.Stats('/home/lijm/WORK/yuan/'+"Profile.prof")
+    # s.strip_dirs().sort_stats("time").print_stats()
 
 
