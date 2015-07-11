@@ -11,6 +11,11 @@ M_THETA = 101
 W_REC = 110
 W_THETA = 111
 
+# const
+NFLT = np.float32
+NINT = np.int32
+NDBL = np.float64
+
 
 def run_DSGLD(num, out_dir, dir, K, V, traject, apprx, train_set_size=20726, doc_per_set=200, alpha=0.01, beta=0.0001, batch_size=50,
               step_size_param=(0.01, 1000, 0.55), MH_max=10, word_partition=10000, max_send_times=3):
@@ -94,47 +99,119 @@ def g_update(comm, theta, norm_const, K, part_list):
     """ assume mem is large enough"""
     fff = stdout.flush
 
+    # ======================================= send to master ================================================
+    send_np(comm, NFLT, norm_const, dest=0, tag=W_THETA)
     for start, end in part_list:
-        comm.Send([theta[:, start:end], MPI.FLOAT], dest=0, tag=W_THETA)
-    comm.Send([norm_const, MPI.FLOAT], dest=0, tag=W_THETA)
+        send_np(comm, NFLT, theta[:, start:end], dest=0, tag=W_THETA)
 
+    # ======================================= recv from master ================================================
+    recv_np(comm, NFLT, buf=norm_const, source=0, tag=M_THETA)
     for start, end in part_list:
-        theta_batch = np.zeros((K, end - start), dtype=np.float32)
-        comm.Recv([theta_batch, MPI.FLOAT], source=0, tag=M_THETA)
-        theta[:, start:end] = theta_batch
-        theta_batch = None; collect()
-    comm.Recv([norm_const, MPI.FLOAT], source=0, tag=M_THETA)
+        theta[:, start:end] = recv_np(comm, NFLT, xy=[K, end-start], source=0, tag=M_THETA)
+
     comm.barrier()
 
 
 def g_recv(comm, theta, g_theta, num_of_worker, K, part_list):
-    fff = stdout.flush
-    norm_const = np.zeros((K, 1), dtype=np.float32)
-    g_norm_const = np.zeros((K, 1), dtype=np.float32)
 
+    # ======================================= recv last ================================================
+    g_norm_const = recv_np(comm, NFLT, xy=[K, 1], source=num_of_worker, tag=W_THETA)
     for start, end in part_list:
-        theta_batch = np.zeros((K, end - start), dtype=np.float32)
-        comm.Recv([theta_batch, MPI.FLOAT], source=num_of_worker, tag=W_THETA)
-        g_theta[:, start:end] = theta_batch
-        theta_batch = None; collect()
-    comm.Recv([g_norm_const, MPI.FLOAT], source=num_of_worker, tag=W_THETA)
+        g_theta[:, start:end] = recv_np(comm, NFLT, xy=[K, end-start], source=num_of_worker, tag=W_THETA)
 
+    # ======================================= recv&send ================================================
     for i in xrange(num_of_worker):
+
         if i != num_of_worker - 1:
+            norm_const = recv_np(comm, NFLT, xy=[K, 1], source=i + 1, tag=W_THETA)
             for start, end in part_list:
-                theta_batch = np.zeros((K, end - start), dtype=np.float32)
-                comm.Recv([theta_batch, MPI.FLOAT], source=i + 1, tag=W_THETA)
-                theta[:, start:end] = theta_batch
-                theta_batch = None; collect()
-            comm.Recv([norm_const, MPI.FLOAT], source=i + 1, tag=W_THETA)
+                theta[:, start:end] = recv_np(comm, NFLT, xy=[K, end-start], source=i + 1, tag=W_THETA)
 
+        send_np(comm, NFLT, g_norm_const, dest=i + 1, tag=M_THETA)
         for start, end in part_list:
-            comm.Send([g_theta[:, start:end], MPI.FLOAT], dest=i + 1, tag=M_THETA)
-        comm.Send([g_norm_const, MPI.FLOAT], dest=i + 1, tag=M_THETA)
+            send_np(comm, NFLT, g_theta[:, start:end], dest=i + 1, tag=M_THETA)
 
+        # ------------------------------------- swap -------------------------------------------------
         tt = theta; theta = g_theta; g_theta = tt
         tt = norm_const; norm_const = g_norm_const; g_norm_const = tt
+
     comm.barrier()
+
+
+def g_coupling(comm, g_theta, K, part_list, group_list):
+    fff = stdout.flush
+
+    for group in group_list:
+        # ======================================= recv from each group ================================================
+        norm_const = np_float(K, 1)
+        for start, end in part_list:
+            g_theta[:, start:end] = 0
+
+        mem_num = len(group)
+        for i in group:
+            norm_const += recv_np(comm, NFLT, xy=[K, 1], source=i, tag=W_THETA)
+            for start, end in part_list:
+                g_theta[:, start:end] += recv_np(comm, NFLT, xy=[K, end-start], source=i, tag=W_THETA) / mem_num
+
+        norm_const /= mem_num
+
+        # ======================================= send to each group ================================================
+        for i in group:
+            send_np(comm, NFLT, norm_const, dest=i, tag=M_THETA)
+            for start, end in part_list:
+                send_np(comm, NFLT, g_theta[:, start:end], dest=i, tag=M_THETA)
+
+
+
+def send_np(comm, type, buf, **kwargs):
+    comm.Send([buf, n2m(type)], **kwargs)
+
+
+def recv_np(comm, type, **kwargs):
+    """
+    you can input your own buff using buf=abc
+    or using xy and we will init one for you
+    """
+
+    if 'xy' in kwargs:
+        tmp = np.zeros((kwargs['xy'][0], kwargs['xy'][1]), dtype=type)
+    elif 'buf' in kwargs:
+        tmp = kwargs['buf']
+    else:
+        print ''
+        raise ValueError('please give me either xy or buf')
+
+    comm.Recv([tmp, n2m(type)], **kwargs)
+
+    return tmp
+
+
+def n2m(type):
+    try:
+        return {
+            np.int32: MPI.INT,
+            np.float32: MPI.FLOAT,
+            np.float64: MPI.DOUBLE
+        }[type]
+    except:
+        print 'type not recorded'
+
+
+def p(data, li, axis=1):
+    for start, end in li:
+        if axis: yield data[:, start:end]
+        else: yield data[start:end, :]
+
+
+def np_float(x, y=None):
+    if y is None: return np.zeros(x, dtype=np.float32)
+    return np.zeros((x, y), dtype=np.float32)
+
+
+def np_int(x, y=None):
+    if y is None: return np.zeros(x, dtype=np.int32)
+    return np.zeros((x, y), dtype=np.int32)
+
 
 def get_per_DSGLD(output_name, comm, start_time, bak_time):
     print 'computing perplexity: '
