@@ -124,7 +124,8 @@ class LDSampler(object):
                                                Adk_mean=self.ndk_avg); collect()
         # ******************************* update theta *********************************************
         (a, b, c) = self.step_size_params
-        eps_t = a * (1 + self.update_ct / b) ** (-c)
+        # TODO change on step !
+        eps_t = (a + self.update_ct / b) ** (-c)
 
         grad = self.beta - batch_theta + (self.D / self.batch_size) * (
             nkw_avg - np.sum(Adk_mean, 0)[:, np.newaxis] * phi); collect()
