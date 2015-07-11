@@ -113,7 +113,7 @@ def g_update(comm, theta, norm_const, K, part_list):
 
 
 def g_recv(comm, theta, g_theta, num_of_worker, K, part_list):
-
+    norm_const = None
     # ======================================= recv last ================================================
     g_norm_const = recv_np(comm, NFLT, xy=[K, 1], source=num_of_worker, tag=W_THETA)
     for start, end in part_list:
