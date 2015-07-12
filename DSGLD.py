@@ -4,6 +4,7 @@ from sys import stdout
 import time
 import numpy as np
 import h5py
+from timer import Timer
 
 # tag def
 M_REC = 100
@@ -29,40 +30,33 @@ def run_DSGLD(num, out_dir, dir, K, V, traject, apprx, train_set_size=20726, doc
     output_name = out_dir + 'DSGLD_perplexity' + suffix + '.txt'
     tmp_dir = dir + 'tmp' + suffix + '/'
     trans_time = 9 * apprx * K * V / 1e9
-
-    part_list = []
-    start = 0
-    while start < V:
-        end = start + word_partition*max_send_times
-        end = end * (end <= V) + V * (end > V)
-        part_list.append([start, end])
-        start = end
+    part_list = mk_plist(word_partition*max_send_times, V)
 
     sampler = LDSampler(0, dir, rank, train_set_size * doc_per_set, K, V, word_partition * max_send_times, apprx,
                         batch_size=batch_size, alpha=alpha, beta=beta, epsilon=step_size_param[0],
                         tau0=step_size_param[1], kappa=step_size_param[2], suffix=suffix)
+    start_time = time.time()
 
     # ************************************ worker *******************************************************
-    start_time = time.time()
     if rank != 0:
 
         comm.reduce(sampler.get_perp_just_in_time(10), op=MPI.SUM, root=0)
         comm.barrier()
 
-        work_time = time.time()
+        w_timer = Timer(go=True)
         for iter in xrange(num):
             print 'rank %i iter: %i' % (rank, iter); fff()
             sampler.update(MH_max)
 
             if (iter + 1) % traject == 0:
-                comm.Gather(np.float32(time.time() - work_time), None, root=0)
+                comm.Gather(np.float32(w_timer.stop()()), None, root=0)
                 comm.Gather(np.float32(sampler.time_bak), None, root=0)
 
                 comm.reduce(sampler.get_perp_just_in_time(10), op=MPI.SUM, root=0)
                 comm.barrier()
 
                 g_update(comm, sampler.theta, sampler.norm_const, K, part_list)
-                sampler.time_bak = 0; work_time = time.time()
+                w_timer.go(); sampler.time_bak = 0
 
     # ************************************ master *******************************************************
     else:
@@ -211,6 +205,17 @@ def np_float(x, y=None):
 def np_int(x, y=None):
     if y is None: return np.zeros(x, dtype=np.int32)
     return np.zeros((x, y), dtype=np.int32)
+
+
+def mk_plist(max_len, V):
+    part_list = []
+    start = 0
+    while start < V:
+        end = start + max_len
+        end = end * (end <= V) + V * (end > V)
+        part_list.append([start, end])
+        start = end
+    return part_list
 
 
 def get_per_DSGLD(output_name, comm, start_time, bak_time):
