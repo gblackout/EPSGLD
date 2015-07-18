@@ -108,16 +108,20 @@ class Gibbs_sampler(object):
 
     def load_d(self, set_name):
         pn = self.tmp_dir + self.suffix + set_name
+        cul_time = time.time()
         ndk = np.load(pn + '_ndk')
         nd = np.load(pn + '_nd')
         z = np.load(pn + '_zzz' + '.npy')
+        self.bak_time += time.time() - cul_time
         return ndk, nd, z
 
     def save_and_init(self, set_name, ndk, nd, z):
         pn = self.tmp_dir + self.suffix + set_name
+        cul_time = time.time()
         ndk.dump(pn + '_ndk')
         nd.dump(pn + '_nd')
         np.save(pn + '_zzz', z)
+        self.bak_time += time.time() - cul_time
 
     # run: 24G; out: 0G
     def update(self, part, MH_max=None, nkw_part=None, silent=False):
@@ -227,12 +231,12 @@ def slice_list(input, size):
 
 
 def run_very_large_light(MH_max):
-    num = 30
+    num = 1
     rank = 1
     word_partition = 10000
     doc_per_set = int(1e4)
     V = int(1e5)
-    K = 1000
+    K = 10000
     jump = 5
     jump_bias = 10
     jump_hold = 0
@@ -263,18 +267,18 @@ def run_very_large_light(MH_max):
 
     start_time = time.time()
     sampler = Gibbs_sampler(V, K, rank, doc_per_set, dir, word_partition=word_partition)
-
-    start_time = get_per(output_name, sampler, start_time)
-    for i in xrange(num):
-        print 'iter--->', i
-
-        for start, end in part_list:
-            sampler.update([start, end], MH_max=MH_max)
-
-        if i < jump_bias:
-            start_time = get_per(output_name, sampler, start_time)
-        elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
-            start_time = get_per(output_name, sampler, start_time)
+    print time.time() - start_time, sampler.bak_time, time.time() - start_time - sampler.bak_time
+    # start_time = get_per(output_name, sampler, start_time)
+    # for i in xrange(num):
+    #     print 'iter--->', i
+    #
+    #     for start, end in part_list:
+    #         sampler.update([start, end], MH_max=MH_max)
+    #
+    #     if i < jump_bias:
+    #         start_time = get_per(output_name, sampler, start_time)
+    #     elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
+    #         start_time = get_per(output_name, sampler, start_time)
 
 
 def get_per(output_name, sampler, start_time):
@@ -294,9 +298,9 @@ def get_per(output_name, sampler, start_time):
 
 
 if __name__ == '__main__':
-    run_very_large_light(2)
+    # run_very_large_light(2)
 
-    # cProfile.runctx("run_very_large_light(2)", globals(), locals(), '/home/lijm/WORK/yuan/'+"Profile.prof")
-    #
-    # s = pstats.Stats('/home/lijm/WORK/yuan/'+"Profile.prof")
-    # s.strip_dirs().sort_stats("time").print_stats()
+    cProfile.runctx("run_very_large_light(2)", globals(), locals(), '/home/lijm/WORK/yuan/'+"Profile.prof")
+
+    s = pstats.Stats('/home/lijm/WORK/yuan/'+"Profile.prof")
+    s.strip_dirs().sort_stats("time").print_stats()

@@ -23,8 +23,8 @@ def run():
     out_dir = '/home/lijm/WORK/yuan/'
     max_len = 10000
 
-    a_list = [(0.1*(10**(-0.2))**x, x) for x in xrange(0, 11)]
-    b_list = [(0.001*(10**(-0.3))**x, x) for x in xrange(0, 11)]
+    a_list = [(100000*(10**0.2)**x, x) for x in xrange(0, 11)]
+    b_list = [(0.0001*(10**(-0.2))**x, x) for x in xrange(0, 11)]
 
     work_list = slice_list(list(itertools.product(a_list, b_list)), size)
 
@@ -44,3 +44,6 @@ def run():
                 start_time = get_per(output_name, sampler, start_time)
             elif (i + 1) % jump == 0 and (i + 1) >= jump_hold:
                 start_time = get_per(output_name, sampler, start_time)
+
+if __name__ == '__main__':
+    run()
