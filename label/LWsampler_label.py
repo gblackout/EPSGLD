@@ -34,18 +34,19 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
 
     iters_mean = 0
     b_timer = Timer()
+    max_len = word_partition * max_send_times
     H = 1 ** (1 + 0.3) * np.sqrt(size - 1)
-    part_list = mk_plist(word_partition * max_send_times, V)
+    part_list = mk_plist(max_len, V)
     sche = [2*i**2 for i in xrange(1, num) if 2*i**2 <= num]
     suffix = time.strftime('_%m%d_%H%M%S', time.localtime()) + '_' + str(rank)
     output_name = out_dir + 'LW_perplexity' + suffix + '.txt'
 
-    sampler = LDSampler(H, dir, rank, train_set_size * doc_per_set, K, V, word_partition * max_send_times, apprx,
+    sampler = LDSampler(H, dir, rank, train_set_size * doc_per_set, K, V, max_len, apprx,
                         batch_size=batch_size, alpha=alpha, beta=beta, a=step_size_param[0],
                         b=step_size_param[1], c=step_size_param[2], suffix=suffix)
 
     if rank != 0:
-        worker_ps(comm, sampler, K, V, MH_max, word_partition * max_send_times, suffix, dir)
+        worker_ps(comm, sampler, K, V, MH_max, max_len, suffix, dir)
 
     # init theta and g_theta
     start_time = time.time()
@@ -59,8 +60,6 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
     # ==================================================================================================================
     # working
     # ==================================================================================================================
-    io_time_list = np.zeros(size, dtype=np.float32)
-    work_time_list = np.zeros(size, dtype=np.float32)
     start_time = get_per_LW(output_name, sampler, start_time, 0)
     comm.barrier()
 
@@ -73,23 +72,16 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
 
         # inform to update
         for j in xrange(1, size): comm.isend(None, dest=j, tag=102)
-        comm.Gather(np.float32(0), [work_time_list, MPI.FLOAT], root=0)
-        comm.Gather(np.float32(0), [io_time_list, MPI.FLOAT], root=0)
-        recv_time = time.time()
-        trans_time = g_recv(comm, sampler.theta, sampler.norm_const, size - 1, K, V, word_partition * max_send_times, apprx)
-        time_bak = time.time() - recv_time - trans_time + work_time_list.max() - (work_time_list - io_time_list).max()
+        time_bak = g_recv(comm, size, sampler.theta, sampler.norm_const, size - 1, K, V, max_len, apprx)
+
         start_time = get_per_LW(output_name, sampler, start_time, time_bak)
-        work_time_list.fill(0); io_time_list.fill(0)
         comm.barrier()
 
-    # stop workers, obtain final
     for i in xrange(1, size): comm.send(None, dest=i, tag=101)
-    comm.Gather(np.float32(0), [work_time_list, MPI.FLOAT], root=0)
-    comm.Gather(np.float32(0), [io_time_list, MPI.FLOAT], root=0)
-    recv_time = time.time()
-    trans_time = g_recv(comm, sampler.theta, sampler.norm_const, size - 1, K, V, word_partition * max_send_times, apprx, get_only=True)
-    time_bak = time.time() - recv_time - trans_time + work_time_list.max() - (work_time_list - io_time_list).max()
+    time_bak = g_recv(comm, size, sampler.theta, sampler.norm_const, size - 1, K, V, max_len, apprx, get_only=True)
+
     get_per_LW(output_name, sampler, start_time, time_bak)
+    comm.barrier()
 
 
 def g_update(comm, theta, g_theta, norm_const, K, rec, max_len, send_only=False):
@@ -133,14 +125,22 @@ def g_update(comm, theta, g_theta, norm_const, K, rec, max_len, send_only=False)
                 theta[:, g_mask_list[i_m]] = buf
                 g_theta[:, g_mask_list[i_m]] = buf
 
+    # wait for prplx
+    comm.barrier()
 
-def g_recv(comm, theta, norm_const, num_of_worker, K, V, max_len, apprx, get_only=False):
+
+def g_recv(comm, size, theta, norm_const, num_of_worker, K, V, max_len, apprx, get_only=False):
     fff = stdout.flush
     status = MPI.Status()
+    io_time_list = np.zeros(size, dtype=np.float32)
+    work_time_list = np.zeros(size, dtype=np.float32)
+    t_timer = Timer()
     # ==================================================================================================================
     # sync rec and norm_const
     # ==================================================================================================================
-    t_timer = Timer()
+
+    comm.Gather(np.float32(0), [work_time_list, MPI.FLOAT], root=0)
+    comm.Gather(np.float32(0), [io_time_list, MPI.FLOAT], root=0)
 
     rec = gather_np(comm, NINT, False, xy=[num_of_worker+1, V], root=0) > 0
     g_rec = rec.sum(0)
@@ -161,21 +161,16 @@ def g_recv(comm, theta, norm_const, num_of_worker, K, V, max_len, apprx, get_onl
         t_timer.go(); batch_theta = theta[:, g_rec]; t_timer.stop()
         batch_theta *= times
 
-        recv_cnt = 0
+        recv_cnt = 0; t_timer.go()
         while recv_cnt <  num_of_worker:
             if comm.Iprobe(source=MPI.ANY_SOURCE, tag=112, status=status):
-                src = status.Get_source()
+                src = status.Get_source(); t_timer.stop()
                 local_len = rec[src - 1].sum()
                 if local_len != 0:
                     buf = recv_np(comm, NFLT, xy=[K, local_len], source=src, tag=112)
                     batch_theta[:, mk_mask(true_len, g_rec, rec[src - 1])] += buf
-                recv_cnt += 1
-
-        # for i_n in xrange(num_of_worker):
-        #     local_len = rec[i_n].sum()
-        #     if local_len != 0:
-        #         buf = recv_np(comm, NFLT, xy=[K, local_len], source=i_n+1, tag=112)
-        #         batch_theta[:, mk_mask(true_len, g_rec, rec[i_n])] += buf
+                recv_cnt += 1; t_timer.go()
+        t_timer.stop()
 
         batch_theta /= num_of_worker
 
@@ -196,26 +191,23 @@ def g_recv(comm, theta, norm_const, num_of_worker, K, V, max_len, apprx, get_onl
             batch_theta *= times[cnt_times: cnt_times + g_len]
             cnt_times += g_len
 
-            # for i_n in xrange(num_of_worker):
-            #     local_len = mask_list_list[i_n][i_g].sum()
-            #     if local_len != 0:
-            #         buf = recv_np(comm, NFLT, xy=[K, local_len], source=i_n+1, tag=112)
-            #         batch_theta[:, mk_mask(g_len, g_mask_list[i_g], mask_list_list[i_n][i_g])] += buf
-
-            recv_cnt = 0
+            recv_cnt = 0; t_timer.go()
             while recv_cnt <  num_of_worker:
                 if comm.Iprobe(source=MPI.ANY_SOURCE, tag=112, status=status):
-                    src = status.Get_source()
+                    src = status.Get_source(); t_timer.stop()
                     local_len = mask_list_list[src-1][i_g].sum()
                     if local_len != 0:
                         buf = recv_np(comm, NFLT, xy=[K, local_len], source=src, tag=112)
                         batch_theta[:, mk_mask(g_len, g_mask_list[i_g], mask_list_list[src-1][i_g])] += buf
-                    recv_cnt += 1
+                    recv_cnt += 1; t_timer.go()
+            t_timer.stop()
 
             batch_theta /= num_of_worker
 
             if not get_only: comm.Bcast([batch_theta, MPI.FLOAT], root=0)
             t_timer.go(); theta[:, g_mask_list[i_g]] = batch_theta; t_timer.stop()
+
+    return t_timer() - est_time(True, [K, true_len], apprx) + work_time_list.max() - (work_time_list - io_time_list).max()
 
 
 def worker_ps(comm, sampler, K, V, MH_max, max_len, suffix, dir):
@@ -234,7 +226,7 @@ def worker_ps(comm, sampler, K, V, MH_max, max_len, suffix, dir):
 
     # wait for initial perplexity
     comm.barrier()
-    work_time = time.time()
+    w_timer = Timer(go=True)
     while not comm.Iprobe(source=0, tag=101):
         comm.isend(iters, dest=0, tag=111)
 
@@ -243,16 +235,14 @@ def worker_ps(comm, sampler, K, V, MH_max, max_len, suffix, dir):
         if comm.Iprobe(source=0, tag=102):
             comm.recv(source=0, tag=102)
 
-            comm.Gather(np.float32(time.time()-work_time), None, root=0)
+            comm.Gather(np.float32(w_timer()), None, root=0)
             comm.Gather(np.float32(sampler.time_bak), None, root=0)
             g_update(comm, sampler.theta, g_theta, sampler.norm_const, K, rec, max_len)
-            rec.fill(0)
-            comm.barrier()
-            sampler.time_bak = 0; work_time = time.time()
+            sampler.time_bak = 0; w_timer.go(); rec.fill(0)
 
         iters += 1
 
-    comm.Gather(np.float32(time.time() - work_time), None, root=0)
+    comm.Gather(np.float32(w_timer()), None, root=0)
     comm.Gather(np.float32(sampler.time_bak), None, root=0)
     g_update(comm, sampler.theta, g_theta, sampler.norm_const, K, rec, max_len, send_only=True)
 

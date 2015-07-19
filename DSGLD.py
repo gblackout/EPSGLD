@@ -49,7 +49,7 @@ def run_DSGLD(num, out_dir, dir, K, V, traject, apprx, train_set_size=20726, doc
             sampler.update(MH_max)
 
             if (iter + 1) % traject == 0:
-                comm.Gather(np.float32(w_timer.stop()()), None, root=0)
+                comm.Gather(np.float32(w_timer()), None, root=0)
                 comm.Gather(np.float32(sampler.time_bak), None, root=0)
 
                 comm.reduce(sampler.get_perp_just_in_time(10), op=MPI.SUM, root=0)
