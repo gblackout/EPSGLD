@@ -24,4 +24,7 @@ class Timer(object):
         return self
 
     def __call__(self):
-        return self.cnt
+        if self.is_cnting: self.stop()
+        tmp = self.cnt
+        self.cnt = 0
+        return tmp

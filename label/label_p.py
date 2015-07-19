@@ -47,15 +47,15 @@ def search(c1, c2):
     return map_list
 
 
-a = np.random.dirichlet([0.0001 for _ in xrange(1000)], size=1000)
-b = np.random.permutation(a)
-
-map_list = search(get_code(a), get_code(b))
-b = b[map_list]
-
-cnt = 0
-for i in xrange(a.shape[0]):
-    if ((a[i, :] - b[i, :]) > 10**(-8)).any():
-        cnt += 1
-print cnt
+# a = np.random.dirichlet([0.0001 for _ in xrange(1000)], size=1000)
+# b = np.random.permutation(a)
+#
+# map_list = search(get_code(a), get_code(b))
+# b = b[map_list]
+#
+# cnt = 0
+# for i in xrange(a.shape[0]):
+#     if ((a[i, :] - b[i, :]) > 10**(-8)).any():
+#         cnt += 1
+# print cnt
 

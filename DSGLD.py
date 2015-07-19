@@ -19,7 +19,7 @@ NDBL = np.float64
 
 
 def run_DSGLD(num, out_dir, dir, K, V, traject, apprx, train_set_size=20726, doc_per_set=200, alpha=0.01, beta=0.0001, batch_size=50,
-              step_size_param=(0.01, 1000, 0.55), MH_max=10, word_partition=10000, max_send_times=3):
+              step_size_param=(10**5.2, 10**(-6), 0.33), MH_max=10, word_partition=10000, max_send_times=3):
     # ************************************ init params *******************************************************
     fff = stdout.flush
     comm = MPI.COMM_WORLD
@@ -33,8 +33,8 @@ def run_DSGLD(num, out_dir, dir, K, V, traject, apprx, train_set_size=20726, doc
     part_list = mk_plist(word_partition*max_send_times, V)
 
     sampler = LDSampler(0, dir, rank, train_set_size * doc_per_set, K, V, word_partition * max_send_times, apprx,
-                        batch_size=batch_size, alpha=alpha, beta=beta, epsilon=step_size_param[0],
-                        tau0=step_size_param[1], kappa=step_size_param[2], suffix=suffix)
+                        batch_size=batch_size, alpha=alpha, beta=beta, a=step_size_param[0],
+                        b=step_size_param[1], c=step_size_param[2], suffix=suffix)
     start_time = time.time()
 
     # ************************************ worker *******************************************************
@@ -168,11 +168,11 @@ def recv_np(comm, type, **kwargs):
     """
 
     if 'xy' in kwargs:
-        tmp = np.zeros((kwargs['xy'][0], kwargs['xy'][1]), dtype=type)
+        xy = kwargs.pop('xy')
+        tmp = np.zeros((xy[0], xy[1]), dtype=type)
     elif 'buf' in kwargs:
-        tmp = kwargs['buf']
+        tmp = kwargs.pop('buf')
     else:
-        print ''
         raise ValueError('please give me either xy or buf')
 
     comm.Recv([tmp, n2m(type)], **kwargs)
