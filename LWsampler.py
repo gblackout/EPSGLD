@@ -17,8 +17,9 @@ import pstats, cProfile
 # tag 112: worker send theta
 # the num defines the num of updates of the global theta
 
+
 def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=200, alpha=0.01, beta=0.0001,
-             batch_size=50, step_size_param=(0.01, 1000, 0.55), MH_max=10, word_partition=10000, max_send_times=3):
+             batch_size=50, step_size_param=(10**5.2, 10**(-6), 0.33), MH_max=2, word_partition=10000, max_send_times=3):
     """ num is the num_of_samples
         dir: indicates the root folder of each data folder, tmp file folder shall be created in here"""
     fff = stdout.flush
@@ -35,8 +36,8 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
     start_time = 0
     output_name = out_dir + 'LW_perplexity' + suffix + '.txt'
     sampler = LDSampler(H, dir, rank, train_set_size * doc_per_set, K, V, word_partition * max_send_times, apprx,
-                        batch_size=batch_size, alpha=alpha, beta=beta, epsilon=step_size_param[0],
-                        tau0=step_size_param[1], kappa=step_size_param[2], suffix=suffix)
+                        batch_size=batch_size, alpha=alpha, beta=beta, a=step_size_param[0],
+                        b=step_size_param[1], c=step_size_param[2], suffix=suffix)
     if rank != 0:
         rec = np.zeros(V, dtype=bool)
         g_theta_file = h5py.File(g_name, 'w')
@@ -164,6 +165,7 @@ def g_update(comm, theta, g_theta, norm_const, K, rec, max_len, send_only=False)
             g_theta[:, g_mask_list[i_m]] = theta_batch
             theta_batch = None; collect()
 
+
 def g_recv(comm, theta, norm_const, num_of_worker, K, V, max_len, apprx, get_only=False):
     trans_time = time.time()
     fff = stdout.flush
@@ -264,6 +266,7 @@ def g_recv(comm, theta, norm_const, num_of_worker, K, V, max_len, apprx, get_onl
 
         return trans_time
 
+
 def part_rec(rec, max_len, g_rec=None):
     """ rec: bool vec to be part
         max_len: len of each part
@@ -337,15 +340,10 @@ def get_per_LW(output_name, sampler, start_time, bak_time):
 
 
 if __name__ == '__main__':
-    # # small_set
-    # lw_frame(100, './small_test_d/', 5, 5, 2, train_set_size=5, doc_per_set=15, batch_size=5,
-    #          step_size_param=(0.01, 5, 0.55), MH_max=10, word_partition=1000, max_send_times=1)
 
-    # very_large
     # lw_frame(5, './', '../corpus/b4_ff/', 100, int(1e5))
     lw_frame(20, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/b4_ff/', 100, int(1e5), apprx=1)
 
     # cProfile.runctx("lw_frame(50, '../corpus/b4_ff/', 1000, int(1e5), 2)", globals(), locals(), "Profile.prof")
-    #
     # s = pstats.Stats("Profile.prof")
     # s.strip_dirs().sort_stats("time").print_stats()

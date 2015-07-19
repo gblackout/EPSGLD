@@ -12,6 +12,7 @@ from pickle import load
 from os import path, makedirs
 from gc import collect
 
+
 class LDSampler(object):
     """ H: value sqrt(m)*sigma^(1+0.3)
         dir: indicates the root folder of each data folder, tmp file folder shall be created in here
@@ -27,11 +28,11 @@ class LDSampler(object):
         """
     # (max_len/10000) * 12 G
     def __init__(self, H, dir, rank, D, K, W, max_len, apprx, batch_size=50, alpha=0.01, beta=0.0001,
-                 epsilon=0.01, tau0=1000, kappa=0.55, samples_per_update=50, test_doc='test_doc', suffix=None):
+                 a=10**5.2, b=10**(-6), c=0.33, samples_per_update=50, test_doc='test_doc', suffix=None):
         # set the related parameters1
         self.K = K
         self.batch_size = batch_size
-        self.step_size_params = (epsilon, tau0, kappa)
+        self.step_size_params = (a, b, c)
         self.samples_per_update = samples_per_update
 
         self.W = W
@@ -108,7 +109,6 @@ class LDSampler(object):
         if self.batch_loc[1] != 0:
             phi = batch_theta / self.norm_const
         else:
-            # TODO move to cython ?
             small_mask = np.zeros(phi.shape[1], dtype=bool)
             mask_cnt = 0
             for i in xrange(batch_mask.shape[0]):
@@ -124,7 +124,6 @@ class LDSampler(object):
                                                Adk_mean=self.ndk_avg); collect()
         # ******************************* update theta *********************************************
         (a, b, c) = self.step_size_params
-        # TODO change on step !
         eps_t = (a + self.update_ct / b) ** (-c)
 
         grad = self.beta - batch_theta + (self.D / self.batch_size) * (
@@ -279,7 +278,7 @@ def slice_list(input, size):
     return result
 
 
-def run_very_large(MH_max, alpha=0.01, beta=0.0001, step_size_param=(0.01, 1000, 0.55)):
+def run_very_large(MH_max, alpha=0.01, beta=0.0001, step_size_param=(10**5.2, 10**(-6), 0.33)):
     num = 12000
     train_set_size = 20726
     rank = 1
@@ -314,7 +313,7 @@ def run_very_large(MH_max, alpha=0.01, beta=0.0001, step_size_param=(0.01, 1000,
     output_name = out_dir + 'serial_perplexity' + time.strftime('_%m%d_%H%M%S', time.localtime()) + '.txt'
 
     sampler = LDSampler(0, dir, rank, train_set_size*doc_per_set, K, V, max_len, 1, batch_size=batch_size, alpha=alpha,
-                        beta=beta, epsilon=step_size_param[0], tau0=step_size_param[1], kappa=step_size_param[2])
+                        beta=beta, a=step_size_param[0], b=step_size_param[1], c=step_size_param[2])
 
     start_time = get_per(output_name, sampler, time.time())
     for i in xrange(num):
@@ -341,10 +340,8 @@ def get_per(output_name, sampler, start_time):
 
     return start_time + time.time() - per_s
 
-from sys import argv
+
 if __name__ == '__main__':
-    # run_single()
-    # test_on_alias()
 
     run_very_large(MH_max=10)
 
