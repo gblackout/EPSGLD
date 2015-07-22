@@ -37,7 +37,7 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
     max_len = word_partition * max_send_times
     H = 1 ** (1 + 0.3) * np.sqrt(size - 1)
     part_list = mk_plist(max_len, V)
-    sche = [2*i**2 for i in xrange(1, num) if 2*i**2 <= num]
+    sche = [i**3 for i in xrange(1, num) if i**3 <= num]
     suffix = time.strftime('_%m%d_%H%M%S', time.localtime()) + '_' + str(rank)
     output_name = out_dir + 'LW_perplexity' + suffix + '.txt'
 
@@ -51,7 +51,7 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
     # init theta and g_theta
     start_time = time.time()
     for start, end in part_list:
-        b_timer.go(); dummy = sampler.theta[start:end, :]
+        b_timer.go(); dummy = sampler.theta[:, start:end]
         bcast_np(comm, NFLT, False, buf=dummy, root=0); b_timer.stop()
         start_time += b_timer() - est_time(True, dummy.shape, apprx)
 
@@ -60,8 +60,9 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
     # ==================================================================================================================
     # working
     # ==================================================================================================================
-    start_time = get_per_LW(output_name, sampler, start_time, 0)
-    comm.barrier()
+    # TODO
+    # start_time = get_per_LW(output_name, sampler, start_time, 0)
+    # comm.barrier()
 
     for i in xrange(len(sche)):
         print '0---> update %i of %i' % (i, len(sche))
@@ -84,13 +85,60 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
     comm.barrier()
 
 
+def worker_ps(comm, sampler, K, V, MH_max, max_len, suffix, dir):
+    fff = stdout.flush
+
+    iters = 0
+    rec = np.zeros(V, dtype=bool)
+    g_theta_file = h5py.File(dir + 'tmp' + suffix + '/' + 'g_theta_file' + suffix + '.h5', 'w')
+    g_theta = g_theta_file.create_dataset('g_theta', (K, V), dtype='float32')
+    part_list = mk_plist(max_len, V)
+
+    for start, end in part_list:
+        dummy = bcast_np(comm, NFLT, True, xy=[K, end-start], root=0)
+        sampler.theta[:, start:end] = dummy
+        g_theta[:, start:end] = dummy
+
+    comm.Bcast([sampler.norm_const, MPI.FLOAT], root=0)
+
+    # TODO wait for initial perplexity
+    # comm.barrier()
+
+    w_timer = Timer(go=True)
+    while not comm.Iprobe(source=0, tag=101):
+        comm.isend(iters, dest=0, tag=111)
+
+        sampler.update(MH_max, LWsampler=True, g_theta=g_theta, rec=rec)
+
+        if comm.Iprobe(source=0, tag=102):
+            comm.recv(source=0, tag=102)
+
+            comm.Gather(np.float32(w_timer()), None, root=0)
+            comm.Gather(np.float32(sampler.time_bak), None, root=0)
+            g_update(comm, sampler.theta, g_theta, sampler.norm_const, K, rec, max_len)
+            sampler.time_bak = 0; w_timer.go(); rec.fill(0)
+
+        iters += 1
+
+    comm.Gather(np.float32(w_timer()), None, root=0)
+    comm.Gather(np.float32(sampler.time_bak), None, root=0)
+    g_update(comm, sampler.theta, g_theta, sampler.norm_const, K, rec, max_len, send_only=True)
+
+
 def g_update(comm, theta, g_theta, norm_const, K, rec, max_len, send_only=False):
     fff = stdout.flush
     # ==================================================================================================================
     # sync rec and norm_const
     # ==================================================================================================================
+
+    # debug
+    print MPI.COMM_WORLD.Get_rank(), rec.sum(); fff()
+
     comm.Gather([np.int32(rec), MPI.INT], [None, MPI.INT], root=0)
     g_rec = bcast_np(comm, NINT, True, root=0, buf=np.int32(rec).copy()) > 0
+
+    # debug
+    print MPI.COMM_WORLD.Get_rank(), g_rec.sum(); fff()
 
     reduce_np(comm, NFLT, True, buf=norm_const, op=MPI.SUM, root=0)
     if not send_only: bcast_np(comm, NFLT, False, buf=norm_const, root=0)
@@ -143,7 +191,7 @@ def g_recv(comm, size, theta, norm_const, num_of_worker, K, V, max_len, apprx, g
     comm.Gather(np.float32(0), [io_time_list, MPI.FLOAT], root=0)
 
     rec = gather_np(comm, NINT, False, xy=[num_of_worker+1, V], root=0) > 0
-    g_rec = rec.sum(0)
+    g_rec = np.int32(rec.sum(0))
     comm.Bcast([g_rec, MPI.INT], root=0)
     times = num_of_worker - g_rec[g_rec != 0]
     g_rec = g_rec > 0
@@ -165,6 +213,10 @@ def g_recv(comm, size, theta, norm_const, num_of_worker, K, V, max_len, apprx, g
         while recv_cnt <  num_of_worker:
             if comm.Iprobe(source=MPI.ANY_SOURCE, tag=112, status=status):
                 src = status.Get_source(); t_timer.stop()
+
+                # debug
+                print '*************', src; fff()
+
                 local_len = rec[src - 1].sum()
                 if local_len != 0:
                     buf = recv_np(comm, NFLT, xy=[K, local_len], source=src, tag=112)
@@ -208,43 +260,6 @@ def g_recv(comm, size, theta, norm_const, num_of_worker, K, V, max_len, apprx, g
             t_timer.go(); theta[:, g_mask_list[i_g]] = batch_theta; t_timer.stop()
 
     return t_timer() - est_time(True, [K, true_len], apprx) + work_time_list.max() - (work_time_list - io_time_list).max()
-
-
-def worker_ps(comm, sampler, K, V, MH_max, max_len, suffix, dir):
-    iters = 0
-    rec = np.zeros(V, dtype=bool)
-    g_theta_file = h5py.File(dir + 'tmp' + suffix + '/' + 'g_theta_file' + suffix + '.h5', 'w')
-    g_theta = g_theta_file.create_dataset('g_theta', (K, V), dtype='float32')
-    part_list = mk_plist(max_len, V)
-
-    for start, end in part_list:
-        dummy = bcast_np(comm, NFLT, True, root=0)
-        sampler.theta[start:end, :] = dummy
-        g_theta[start:end, :] = dummy
-
-    comm.Bcast([sampler.norm_const, MPI.FLOAT], root=0)
-
-    # wait for initial perplexity
-    comm.barrier()
-    w_timer = Timer(go=True)
-    while not comm.Iprobe(source=0, tag=101):
-        comm.isend(iters, dest=0, tag=111)
-
-        sampler.update(MH_max, LWsampler=True, g_theta=g_theta, rec=rec)
-
-        if comm.Iprobe(source=0, tag=102):
-            comm.recv(source=0, tag=102)
-
-            comm.Gather(np.float32(w_timer()), None, root=0)
-            comm.Gather(np.float32(sampler.time_bak), None, root=0)
-            g_update(comm, sampler.theta, g_theta, sampler.norm_const, K, rec, max_len)
-            sampler.time_bak = 0; w_timer.go(); rec.fill(0)
-
-        iters += 1
-
-    comm.Gather(np.float32(w_timer()), None, root=0)
-    comm.Gather(np.float32(sampler.time_bak), None, root=0)
-    g_update(comm, sampler.theta, g_theta, sampler.norm_const, K, rec, max_len, send_only=True)
 
 
 def part_rec(rec, max_len, g_rec=None):
@@ -331,6 +346,8 @@ def bcast_np(comm, type, back, **kwargs):
     else:
         raise ValueError('please give me either xy or buf')
 
+    print 'Bcast', MPI.COMM_WORLD.Get_rank(), tmp.shape, tmp.dtype, kwargs; stdout.flush()
+
     comm.Bcast([tmp, n2m(type)], **kwargs)
 
     if back:
@@ -352,9 +369,11 @@ def reduce_np(comm, type, send, **kwargs):
     if send: sendbuf = tmp; tmp = None
     else: sendbuf = np.zeros(tmp.shape, dtype=type)
 
+    print 'reduce', MPI.COMM_WORLD.Get_rank(), sendbuf.shape, tmp is None, kwargs; stdout.flush()
+
     comm.Reduce([sendbuf, n2m(type)], [tmp, n2m(type)], **kwargs)
 
-    if send: return tmp
+    if not send: return tmp
 
 
 def gather_np(comm, type, send, **kwargs):
@@ -392,7 +411,7 @@ def mk_mask(true_len, g_rec, rec):
 if __name__ == '__main__':
 
     # lw_frame(5, './', '../corpus/b4_ff/', 100, int(1e5))
-    lw_frame(20, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/b4_ff/', 100, int(1e5), apprx=1)
+    lw_frame(1000, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/b4_ff/', 1000, int(1e5), apprx=1)
 
     # cProfile.runctx("lw_frame(50, '../corpus/b4_ff/', 1000, int(1e5), 2)", globals(), locals(), "Profile.prof")
     # s = pstats.Stats("Profile.prof")

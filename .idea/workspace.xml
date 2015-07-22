@@ -5,8 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1363bd70-00bb-453e-8201-fd1f81341c5e" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/DSGLD.py" afterPath="$PROJECT_DIR$/DSGLD.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/label/LWsampler_l.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/label/small_test.py" />
+      <change type="DELETED" beforePath="F:\Work\very_large\very_large_out.xlsx" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/label/LWsampler_label.py" afterPath="$PROJECT_DIR$/label/LWsampler_label.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/label/label_p.py" afterPath="$PROJECT_DIR$/label/label_p.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="very_large.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -32,7 +36,7 @@
     <SUITE FILE_PATH="coverage/very_large$sgd4lda.coverage" NAME="sgd4lda Coverage Results" MODIFIED="1433919703843" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/very_large$LWsampler.coverage" NAME="LWsampler Coverage Results" MODIFIED="1428739239792" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/very_large$visualize.coverage" NAME="visualize Coverage Results" MODIFIED="1436601972193" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/very_large$label_p.coverage" NAME="label_p Coverage Results" MODIFIED="1437277044938" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/label" />
+    <SUITE FILE_PATH="coverage/very_large$label_p.coverage" NAME="label_p Coverage Results" MODIFIED="1437406341656" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/label" />
     <SUITE FILE_PATH="coverage/very_large$sampler_g.coverage" NAME="sampler_g Coverage Results" MODIFIED="1433577018502" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/very_large$MPI_test.coverage" NAME="MPI_test Coverage Results" MODIFIED="1433853070014" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/very_large$con_prod.coverage" NAME="con_prod Coverage Results" MODIFIED="1432372225273" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -52,52 +56,59 @@
       <file leaf-file-name="sgd4lda.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sgd4lda.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="6141" max-vertical-offset="7981">
-              <caret line="287" column="13" selection-start-line="287" selection-start-column="13" selection-end-line="287" selection-end-column="13" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="4830" max-vertical-offset="8257">
+              <caret line="210" column="8" selection-start-line="210" selection-start-column="8" selection-end-line="210" selection-end-column="8" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="LWsampler_label.py" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/label/LWsampler_label.py">
+      <file leaf-file-name="small_test.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/label/small_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="2.9283352" vertical-offset="794" max-vertical-offset="5773">
-              <caret line="150" column="36" selection-start-line="150" selection-start-column="36" selection-end-line="150" selection-end-column="36" />
-              <folding>
-                <element signature="e#48#70#0" expanded="true" />
-                <element signature="e#9414#10731#0" expanded="false" />
-                <element signature="e#10778#11820#0" expanded="false" />
-                <element signature="e#11859#12493#0" expanded="false" />
-                <element signature="e#12560#12871#0" expanded="false" />
-                <element signature="e#12920#13268#0" expanded="false" />
-                <element signature="e#13318#13810#0" expanded="false" />
-                <element signature="e#13860#14305#0" expanded="false" />
-                <element signature="e#14347#14414#0" expanded="false" />
-                <element signature="e#14456#14664#0" expanded="false" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="timer.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/timer.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="805">
-              <caret line="29" column="18" selection-start-line="29" selection-start-column="18" selection-end-line="29" selection-end-column="18" />
+            <state vertical-scroll-proportion="0.0" vertical-offset="1012" max-vertical-offset="1495">
+              <caret line="44" column="21" selection-start-line="44" selection-start-column="21" selection-end-line="44" selection-end-column="21" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="DSGLD.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="DSGLD.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/DSGLD.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="688" max-vertical-offset="5221">
-              <caret line="51" column="46" selection-start-line="51" selection-start-column="46" selection-end-line="51" selection-end-column="46" />
-              <folding>
-                <element signature="e#8381#8984#0" expanded="false" />
-              </folding>
+            <state vertical-scroll-proportion="1.6229328" vertical-offset="0" max-vertical-offset="5727">
+              <caret line="70" column="26" selection-start-line="70" selection-start-column="26" selection-end-line="70" selection-end-column="26" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="label_p.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/label/label_p.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="414" max-vertical-offset="1334">
+              <caret line="32" column="27" selection-start-line="32" selection-start-column="27" selection-end-line="32" selection-end-column="27" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="sampler_g.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/sampler_g.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="4048" max-vertical-offset="7176">
+              <caret line="176" column="50" selection-start-line="176" selection-start-column="50" selection-end-line="176" selection-end-column="50" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="LWsampler_l.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/label/LWsampler_l.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="483" max-vertical-offset="7038">
+              <caret line="43" column="45" selection-start-line="43" selection-start-column="45" selection-end-line="43" selection-end-column="45" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -142,17 +153,19 @@
         <option value="$PROJECT_DIR$/sgd4lda.py" />
         <option value="$PROJECT_DIR$/search_step/search.py" />
         <option value="$PROJECT_DIR$/LWsampler.py" />
-        <option value="$PROJECT_DIR$/label/label_p.py" />
         <option value="$PROJECT_DIR$/timer.py" />
         <option value="$PROJECT_DIR$/MPI_test.py" />
         <option value="$PROJECT_DIR$/DSGLD.py" />
         <option value="$PROJECT_DIR$/label/LWsampler_label.py" />
+        <option value="$PROJECT_DIR$/label/label_p.py" />
+        <option value="$PROJECT_DIR$/label/LWsampler_l.py" />
+        <option value="$PROJECT_DIR$/label/small_test.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="268" />
-    <option name="width" value="1652" />
+    <option name="x" value="270" />
+    <option name="width" value="1525" />
     <option name="height" value="1080" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
@@ -583,15 +596,15 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="268" y="0" width="1652" height="1080" extended-state="0" />
+    <frame x="270" y="0" width="1525" height="1080" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32349843" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32953367" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3293201" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.1312814" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.21796483" sideWeight="0.5" order="1" side_tool="false" content_ui="combo" />
+      <window_info id="Structure" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.14129692" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15290102" sideWeight="0.5" order="1" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.38040042" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="true" content_ui="tabs" />
@@ -634,24 +647,10 @@
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
-      <option name="time" value="200" />
+      <option name="time" value="202" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/syntax_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="414" max-vertical-offset="598">
-          <caret line="18" column="12" selection-start-line="18" selection-start-column="12" selection-end-line="18" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DSGLD.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="3611" max-vertical-offset="3864">
-          <caret line="162" column="0" selection-start-line="162" selection-start-column="0" selection-end-line="162" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/syntax_test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="414" max-vertical-offset="598">
@@ -919,30 +918,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/sampler_g.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.011025358" vertical-offset="5763" max-vertical-offset="6923">
-          <caret line="262" column="36" selection-start-line="262" selection-start-column="36" selection-end-line="262" selection-end-column="36" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/search_step/search.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="1012" max-vertical-offset="2024">
           <caret line="59" column="17" selection-start-line="59" selection-start-column="17" selection-end-line="59" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/label/label_p.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.2" vertical-offset="0" max-vertical-offset="920">
-          <caret line="17" column="0" selection-start-line="17" selection-start-column="0" selection-end-line="17" selection-end-column="0" />
-          <folding>
-            <element signature="e#44#165#0" expanded="false" />
-            <element signature="e#193#434#0" expanded="false" />
-            <element signature="e#461#1087#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -950,7 +929,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.025358325" vertical-offset="0" max-vertical-offset="1748">
           <caret line="14" column="0" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -958,23 +936,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-0.938258" vertical-offset="1495" max-vertical-offset="7981">
           <caret line="35" column="18" selection-start-line="35" selection-start-column="18" selection-end-line="35" selection-end-column="18" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sgd4lda.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="6141" max-vertical-offset="7981">
-          <caret line="287" column="13" selection-start-line="287" selection-start-column="13" selection-end-line="287" selection-end-column="13" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/timer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="805">
-          <caret line="29" column="18" selection-start-line="29" selection-start-column="18" selection-end-line="29" selection-end-column="18" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -982,7 +943,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.4" vertical-offset="0" max-vertical-offset="920">
           <caret line="23" column="23" selection-start-line="23" selection-start-column="23" selection-end-line="23" selection-end-column="23" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -990,36 +950,68 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.3296582" vertical-offset="1748" max-vertical-offset="4002">
           <caret line="96" column="36" selection-start-line="96" selection-start-column="36" selection-end-line="96" selection-end-column="36" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/label/LWsampler_label.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="8418" max-vertical-offset="9729">
+          <caret line="366" column="49" selection-start-line="366" selection-start-column="49" selection-end-line="366" selection-end-column="49" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/timer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.725" vertical-offset="0" max-vertical-offset="920">
+          <caret line="29" column="18" selection-start-line="29" selection-start-column="18" selection-end-line="29" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sampler_g.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="3808" max-vertical-offset="6923">
+          <caret line="176" column="50" selection-start-line="176" selection-start-column="50" selection-end-line="176" selection-end-column="50" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/label/label_p.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="415" max-vertical-offset="1334">
+          <caret line="32" column="27" selection-start-line="32" selection-start-column="27" selection-end-line="32" selection-end-column="27" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sgd4lda.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="4390" max-vertical-offset="7981">
+          <caret line="210" column="8" selection-start-line="210" selection-start-column="8" selection-end-line="210" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/label/small_test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1495">
+          <caret line="44" column="21" selection-start-line="44" selection-start-column="21" selection-end-line="44" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/label/LWsampler_l.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="483" max-vertical-offset="7038">
+          <caret line="43" column="45" selection-start-line="43" selection-start-column="45" selection-end-line="43" selection-end-column="45" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/DSGLD.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="688" max-vertical-offset="5221">
-          <caret line="51" column="46" selection-start-line="51" selection-start-column="46" selection-end-line="51" selection-end-column="46" />
-          <folding>
-            <element signature="e#8381#8984#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/label/LWsampler_label.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="2.9283352" vertical-offset="794" max-vertical-offset="5773">
-          <caret line="150" column="36" selection-start-line="150" selection-start-column="36" selection-end-line="150" selection-end-column="36" />
-          <folding>
-            <element signature="e#48#70#0" expanded="true" />
-            <element signature="e#9414#10731#0" expanded="false" />
-            <element signature="e#10778#11820#0" expanded="false" />
-            <element signature="e#11859#12493#0" expanded="false" />
-            <element signature="e#12560#12871#0" expanded="false" />
-            <element signature="e#12920#13268#0" expanded="false" />
-            <element signature="e#13318#13810#0" expanded="false" />
-            <element signature="e#13860#14305#0" expanded="false" />
-            <element signature="e#14347#14414#0" expanded="false" />
-            <element signature="e#14456#14664#0" expanded="false" />
-          </folding>
+        <state vertical-scroll-proportion="1.6229328" vertical-offset="0" max-vertical-offset="5727">
+          <caret line="70" column="26" selection-start-line="70" selection-start-column="26" selection-end-line="70" selection-end-column="26" />
+          <folding />
         </state>
       </provider>
     </entry>
