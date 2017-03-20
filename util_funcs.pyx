@@ -13,6 +13,17 @@ from sys import stdout
 from os import listdir
 import re
 
+"""
+Before you read the code:
+
+1. this file contains functions for per-token sampling, such as vanilla collapsed gibbs sampling, aliasLDA and LightLDA
+. They are written in cython grammar which is a combination of C and python, and I think it should be straightforward to
+understand.
+
+2. for 10708 you should focus on sample_z_par_alias(), gen_alias_table(), sample_alias_table_inner() and
+sample_alias_batch() functions
+"""
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def sample_z_par_alias(int doc_size,
@@ -40,14 +51,24 @@ def sample_z_par_alias(int doc_size,
                  np.ndarray[np.long_t, ndim=1] rand_kkk,
                  # np.ndarray[np.int32_t, ndim=1] rand_kkk,
                  ):
-        """ note that doc_size is not batch_size, since the test set size may be not consistent
-            W here is the same as phi.shape[1], i.e. the w_cnt"""
+        """
+            implements the lightLDA fast per-token sampling, which has O(1) complexity
+
+            note:
+                doc_size is not batch_size, since the test set size may be not consistent.
+                W here is the same as phi.shape[1], i.e. the w_cnt
+        """
         cdef Py_ssize_t d, doc_len, i, zOld, w, k, zNew, sim, zInit
         cdef np.ndarray[np.int32_t, ndim=1] z_list
+
+        # indicates if we sample from doc proposal or word proposal. Please refer to LightLDA paper or the summary in
+        # my paper for details
         cdef bint tic_toc = True
+
         cdef int rand_max = <int>RAND_MAX
         cdef Py_ssize_t uni_idx = 0
 
+        # init all the count matrices
         for d in range(doc_size):
             doc_len = len(doc_dicts[d])
             z[d] = np.zeros(doc_len, dtype=np.int32)
@@ -55,6 +76,7 @@ def sample_z_par_alias(int doc_size,
             for i in xrange(doc_len):
                 w = batch_map[doc_dicts[d][i]]
 
+                # the random assignments of topics
                 zInit = rand_kkk[uni_idx]
 
                 Bkw[zInit, w] += 1
@@ -64,6 +86,8 @@ def sample_z_par_alias(int doc_size,
                 z_list[i] = zInit
 
                 uni_idx += 1
+
+        # run gibbs sampling for num_samples iterations ("visiting all tokens in the minibatch" is 1 iteration)
         for sim in xrange(num_samples):
 
             for d in xrange(doc_size):
@@ -79,6 +103,9 @@ def sample_z_par_alias(int doc_size,
                     nd[d] -= 1
                     nk[zOld] -= 1
 
+                    # for 10708 prj: you should notice that the only difference between lightLDA and vanilla gibbs
+                    # sampling comes from how you get new z sample: in vanilla it's O(K), while here it's O(1), and
+                    # that's the only difference (refers to sample_z_par() function for vanilla implementation)
                     zNew = sample_alias_table_inner(MH_max, tic_toc, zOld, w, batch_map_4w[doc_dicts[d][i]], d,
                                                     &z_list[0], &Adk[0,0], &phi[0,0], samples, alpha_bar, alpha,
                                                     beta, beta_bar, K, W, rand_max, doc_len)
@@ -269,14 +296,26 @@ cdef int sample_alias_table_inner(int MH_max, bint word_pro, int old, int w, int
                               int W,
                               int rand_max,
                               int doc_len):
-    """ w is actually the batch_map[w]
-        W here is the same as phi.shape[1], i.e. the w_cnt"""
+    """
+        draw new z sample using alias table methods introduced in lightLDA paper. The samples drawn from alias
+        table for word proposal is in samples (yes, we only keep the samples and discard the table right after the
+        sampling, this is a trick for saving the space). And the alias table for doc proposal is constructed here
+        on-the-fly using z_list
+
+        input:
+            w is actually the batch_map[w]
+            W here is the same as phi.shape[1], i.e. the w_cnt
+    """
 
     cdef int k_old = old
     cdef int k_new, i_u
     cdef double const_rate, const_down
     cdef double acc = 0
+
+    # the list of proposed new z, whose length is MH_max (remember we need to correct the bias from stale alias table
+    # using few MH step, thus we generate multiple z)
     cdef int* zPro
+
     cdef int cur_ptr
 
     # ******************************* gen zPro sequence *********************************************
@@ -292,7 +331,9 @@ cdef int sample_alias_table_inner(int MH_max, bint word_pro, int old, int w, int
                 zPro[i_u] = rand_k_inner(K, rand_max)
             else:
                 zPro[i_u]= z_list[rand_k_inner(doc_len, rand_max)]
+
     # ******************************* get acc_rate for zPro *********************************************
+    # MH step to determine if we accept this new z or not
     for i_m in xrange(MH_max):
         k_new = zPro[i_m]
 
@@ -320,7 +361,13 @@ def gen_alias_table(np.ndarray[np.int32_t, ndim=1] table_h,
                     Samples samples,
                     int iter_per_update,
                     int MH_max):
-        """ the batch_mask is used to indicate columns that are used in this 4-batch"""
+        """
+            construct the alias table, and draw samples from it and then return the samples (yes, we don't need to store
+            the table if we already have the samples)
+
+            note:
+                the batch_mask is used to indicate columns that are used in this 4-batch
+        """
         cdef int V = phi.shape[1], K = phi.shape[0]
 
         cdef np.ndarray[np.float32_t, ndim=1] low = np.zeros(K, dtype=np.float32)
@@ -334,7 +381,11 @@ def gen_alias_table(np.ndarray[np.int32_t, ndim=1] table_h,
         cdef int cnt2w_ind = 0
 
         avg = 1 / (<float>K)
+
+        # constructing table for each word column
+        # the detailed algorithm is described in AliasLDA
         for i_v in xrange(V):
+
             table_cnt = hs = ls = he = le = 0
             for i_l in xrange(K):
                 if phi[i_l, i_v] - avg > -1e-8:
@@ -373,7 +424,10 @@ def gen_alias_table(np.ndarray[np.int32_t, ndim=1] table_h,
 
             while not batch_mask[cnt2w_ind]:
                 cnt2w_ind += 1
+
+            # draw z sample using the alias table
             samples.w_sample[i_v] = sample_alias_batch(w_sample[cnt2w_ind]*iter_per_update*MH_max, &table_h[0], &table_l[0], &table_p[0], K)
+
             cnt2w_ind += 1
 
 @cython.boundscheck(False)
@@ -383,7 +437,12 @@ cdef int* sample_alias_batch(int num,
                        np.int32_t* table_l,
                        np.float32_t* table_p,
                        int K):
-    """ table: [[low_index, high_index, low_p], [...], ...]"""
+    """
+        draw samples in constant time given the alias table, the detailed sampling method is described in AliasLDA
+
+        input:
+            table: [[low_index, high_index, low_p], [...], ...]
+    """
     cdef int i_n, p
     cdef double avg = 1 / (<double>K), runi
     cdef int* samples_row = <int*>malloc(num*sizeof(int))

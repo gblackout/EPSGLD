@@ -20,8 +20,16 @@ import pstats, cProfile
 
 def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=200, alpha=0.01, beta=0.0001,
              batch_size=50, step_size_param=(10**5.2, 10**(-6), 0.33), MH_max=2, word_partition=10000, max_send_times=3):
-    """ num is the num_of_samples
-        dir: indicates the root folder of each data folder, tmp file folder shall be created in here"""
+    """
+        the main framework of embarrassingly parallel implemented using MPI: for 10708 prj, you shouldn't worry too
+        much about if you don't know, there is only a small fraction of code has things to do with the distributed
+        algorithm (the pseudo code I posted on my paper), others are not so important since Petuum is going to take
+        care of it
+
+        input:
+            num: the number of samples
+            dir: indicates the root folder of each data folder, tmp file folder shall be created in here
+    """
     fff = stdout.flush
     # ************************************ init params *******************************************************
     comm = MPI.COMM_WORLD
@@ -64,6 +72,9 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
     comm.Bcast([sampler.norm_const, MPI.FLOAT], root=0)
 
     # ************************************ worker *******************************************************
+    # for 10708 prj: the worker essentially do  nothing but update their model locally, and updates its local copy of
+    # global theta (I refer to theta in my paper) using g_update (ignore its implementation since we now use Petuum for
+    # synchronization)
 
     if rank != 0:
         # wait for initial perplexity
@@ -92,6 +103,10 @@ def lw_frame(num, out_dir, dir, K, V, apprx, train_set_size=20726, doc_per_set=2
                  send_only=True)
 
     # ************************************ master *******************************************************
+    # for 10708 prj: master essentially does two things: update the global theta using
+    # global theta = (theta_1 + .. + theta_n) / n where n is the number of workers; and push this back to worker
+    # I think you can ignore the code below and build them from scratch using Petuum, which should be far more simpler
+    # than mine
     else:
         sche = [2*i**2 for i in xrange(1, num) if 2*i**2 <= num]
         io_time_list = np.zeros(size, dtype=np.float32)
