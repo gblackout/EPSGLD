@@ -341,9 +341,21 @@ def get_per_LW(output_name, sampler, start_time, bak_time):
 
 if __name__ == '__main__':
 
-    # lw_frame(5, './', '../corpus/b4_ff/', 100, int(1e5))
-    lw_frame(20, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/b4_ff/', 100, int(1e5), apprx=1)
+    # lw_frame(1000, './', '../corpus/b4_ff/', 100, int(1e5), 1)
+    # lw_frame(20, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/b4_ff/', 100, int(1e5), apprx=1)
 
     # cProfile.runctx("lw_frame(50, '../corpus/b4_ff/', 1000, int(1e5), 2)", globals(), locals(), "Profile.prof")
     # s = pstats.Stats("Profile.prof")
     # s.strip_dirs().sort_stats("time").print_stats()
+
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("--mode", dest="MODE", type="string", default='get', help="")
+    parser.add_option("--k", dest="K", type="int", default=1000, help="")
+    parser.add_option("--steps", dest="STEPS", type="int", default=30000, help="")
+    (options, args) = parser.parse_args()
+
+    if options.MODE == 'wiki':
+        lw_frame(options.STEPS, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/b4_ff/', options.K, int(1e5), apprx=1)
+    elif options.MODE == 'clueweb':
+        lw_frame(options.STEPS, '/home/lijm/WORK/yuan/', '/home/lijm/WORK/yuan/clueweb/sgld_data/', options.K, int(1e5), apprx=1)

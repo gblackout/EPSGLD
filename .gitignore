@@ -1,0 +1,11 @@
+# Python output files
+*.pyc
+
+# idea folder
+/.idea/*
+.idea/
+
+# others
+ver2/*
+stats/*
+label/*
